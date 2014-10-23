@@ -21,3 +21,15 @@ C:\Users\ghelo\Desktop\uct_final\Briefcase\bin\Debug\Briefcase.pdb
 C:\Users\ghelo\Desktop\uct_final\Briefcase\bin\Debug\ComponentFactory.Krypton.Navigator.dll
 C:\Users\ghelo\Desktop\uct_final\Briefcase\bin\Debug\ComponentFactory.Krypton.Toolkit.dll
 C:\Users\ghelo\Desktop\uct_final\Briefcase\bin\Debug\ExcelLibrary.dll
+C:\Users\user\Desktop\briefcase\obj\x86\Debug\Briefcase.exe
+C:\Users\user\Desktop\briefcase\obj\x86\Debug\Briefcase.pdb
+C:\Users\user\Desktop\briefcase\bin\Debug\Briefcase.exe
+C:\Users\user\Desktop\briefcase\bin\Debug\Briefcase.pdb
+C:\Users\user\Desktop\briefcase\bin\Debug\ComponentFactory.Krypton.Navigator.dll
+C:\Users\user\Desktop\briefcase\bin\Debug\ComponentFactory.Krypton.Toolkit.dll
+C:\Users\user\Desktop\briefcase\bin\Debug\ExcelLibrary.dll
+C:\Users\user\Desktop\briefcase\obj\x86\Debug\Briefcase.csprojResolveAssemblyReference.cache
+C:\Users\user\Desktop\briefcase\obj\x86\Debug\Briefcase.MainForm.resources
+C:\Users\user\Desktop\briefcase\obj\x86\Debug\Briefcase.Properties.Resources.resources
+C:\Users\user\Desktop\briefcase\obj\x86\Debug\Briefcase.csproj.GenerateResource.Cache
+C:\Users\user\Desktop\briefcase\obj\x86\Debug\Briefcase.exe.licenses

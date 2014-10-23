@@ -237,18 +237,18 @@
             // 
             this.optControl.Location = new System.Drawing.Point(76, 53);
             this.optControl.Name = "optControl";
-            this.optControl.Size = new System.Drawing.Size(129, 20);
+            this.optControl.Size = new System.Drawing.Size(127, 20);
             this.optControl.TabIndex = 3;
-            this.optControl.Values.Text = "Export Control data";
+            this.optControl.Values.Text = "Export control data";
             // 
             // optNonControl
             // 
             this.optNonControl.Checked = true;
             this.optNonControl.Location = new System.Drawing.Point(75, 79);
             this.optNonControl.Name = "optNonControl";
-            this.optNonControl.Size = new System.Drawing.Size(155, 20);
+            this.optNonControl.Size = new System.Drawing.Size(153, 20);
             this.optNonControl.TabIndex = 2;
-            this.optNonControl.Values.Text = "Export Non-control data";
+            this.optNonControl.Values.Text = "Export non-control data";
             // 
             // btnExportExcel
             // 

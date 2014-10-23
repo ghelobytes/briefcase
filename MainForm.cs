@@ -21,7 +21,10 @@ namespace Briefcase
         //public const string VERSION = "1.20";
 
         // Added conversion of PSGC to NAME
-        public const string VERSION = "1.21 (10-17-2014)";
+        //public const string VERSION = "1.21 (10-17-2014)";
+
+        // Added hh_id and uct_form_id to every worksheet
+        public const string VERSION = "1.22 (10-23-2014)";
 
 
         protected const string ODK_SETTINGS_FILE = @"\odk\settings\collect.settings";
@@ -65,6 +68,7 @@ namespace Briefcase
         {
             this.Text = this.Text + " - v" + VERSION;
             ODK_DESTINATION = Environment.CurrentDirectory + @"\data\download\" ;
+            
             WatchODK();
 
             dsPSGC.ReadXml(Environment.CurrentDirectory + @"\data\shared\psgc.xml");
@@ -153,7 +157,6 @@ namespace Briefcase
             else
                 ds = GetDefaultForm();
 
-
             SaveFileDialog dialog = new SaveFileDialog();
             
             dialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -162,14 +165,9 @@ namespace Briefcase
             {
                 CreateWorkbook(dialog.FileName, ds);
                 FileInfo f = new FileInfo(dialog.FileName);
-                File.Copy(dialog.FileName, Environment.CurrentDirectory + @"\data\export\" + f.Name);
+                File.Copy(dialog.FileName, Environment.CurrentDirectory + @"\data\export\" + f.Name, true);
             };
             dialog.ShowDialog();
-
-            
-            
-
-            
         }
 
         private DataSet GetControlForm()
@@ -185,9 +183,12 @@ namespace Briefcase
         private DataSet XMLtoDS(bool control = false)
         {
             DataSet ds = new DataSet("DataSet");
+            ds.EnforceConstraints = false;
+
+            int uct_form_id = 0;
 
             // prepare structure of tables
-            ds.ReadXmlSchema(Environment.CurrentDirectory + @"\data\shared\schema.xsd");
+            ds.ReadXmlSchema(Environment.CurrentDirectory + String.Format(@"\data\shared\{0}", (control ? "schema_control.xsd" : "schema.xsd")));
 
             // get all xml files
             DirectoryInfo destinationDir = new DirectoryInfo(ODK_DESTINATION);
@@ -199,14 +200,42 @@ namespace Briefcase
                 foreach (DirectoryInfo instancesDir in tabletDir.GetDirectories("instances"))
                 {
                     FileInfo[] xmlFiles = instancesDir.GetFiles(@"uct_form*.xml", SearchOption.AllDirectories);
-                    
+ 
                     foreach (FileInfo f in xmlFiles)
                     {
-          
+
+                        DataSet dsTemp = new DataSet();
+                        dsTemp.ReadXmlSchema(Environment.CurrentDirectory + String.Format(@"\data\shared\{0}", (control ? "schema_control.xsd" : "schema.xsd")));
+
+                        if (f.FullName.Contains("uct_form_control") && !control)
+                            continue;
+                        if (!f.FullName.Contains("uct_form_control") && control)
+                            continue;
+
+                        dsTemp.ReadXml(f.FullName, XmlReadMode.InferSchema);
+                        
+                        
+                        // do any necessary transformations
+                        string uct_form_id_name = (control ? "uct_form_control_id" : "uct_form_id");
+                        object hh_id = "";
+                        if (dsTemp.Tables["S1.2"].Rows.Count > 0)
+                            hh_id = dsTemp.Tables["S1.2"].Rows[0]["hh_id"];
+                        uct_form_id++;
+
+                        AddAdditionalData(dsTemp, hh_id, uct_form_id, uct_form_id_name, f.DirectoryName);
+                        
+
+                        // merge to main DS
+                        ds.Merge(dsTemp,false, MissingSchemaAction.Ignore);
+
+
+                        /*
                         if(f.FullName.Contains("uct_form_control") && control)
                             ds.ReadXml(f.FullName);
                         if (!f.FullName.Contains("uct_form_control") && !control)
                             ds.ReadXml(f.FullName);
+                        */
+
                     }
                 }
 
@@ -214,12 +243,44 @@ namespace Briefcase
             return ds;
         }
 
+        private void AddAdditionalData(DataSet ds, object hh_id, int uct_form_id, string uct_form_id_name, string dir)
+        {
+            foreach (DataTable dt in ds.Tables)
+            {
+                if (!dt.Columns.Contains("hh_id"))
+                    dt.Columns.Add("hh_id");
+                if (!dt.Columns.Contains(uct_form_id_name))
+                    dt.Columns.Add(new DataColumn(uct_form_id_name, typeof(int)));
+
+                foreach (DataRow dr in dt.Rows)
+                {
+                    dr["hh_id"] = hh_id;
+                    dr[uct_form_id_name] = uct_form_id;
+
+                    if (dt.TableName == "meta")
+                        dr["directory"] = dir;
+
+                    if (dt.TableName == "S1.2")
+                    {
+                        dr["photo"] = @"file:///" + dir + @"\" + dr["Q2.5"];
+                    }
+
+                }
+
+                
+
+            }
+        }
+
+
         private void CreateWorkbook(String filePath, DataSet dataset)
         {
             if (dataset.Tables.Count == 0)
                 throw new ArgumentException("DataSet needs to have at least one DataTable", "dataset");
 
             Workbook workbook = new Workbook();
+            int lastRow = 0;
+
             foreach (DataTable dt in dataset.Tables)
             {
                 Worksheet worksheet = new Worksheet(dt.TableName);
@@ -228,19 +289,21 @@ namespace Briefcase
                     // Add column header
                     worksheet.Cells[0, i] = new Cell(dt.Columns[i].ColumnName);
 
-
-
                     // Populate row data
                     for (int j = 0; j < dt.Rows.Count; j++)
                     {
                         //object value = dt.Rows[j][i];
                         object value = ProcessData(dt.Columns[i].ColumnName, dt.Rows[j][i]);
 
-
                         worksheet.Cells[j + 1, i] = new Cell(dt.Rows[j][i] == DBNull.Value ? "" : value);
                     }
                 }
                 workbook.Worksheets.Add(worksheet);
+            }
+            // fix bug as described here: https://code.google.com/p/excellibrary/issues/detail?id=60
+            for (int i = 0; i < 150; i++)
+            {
+                workbook.Worksheets[0].Cells[workbook.Worksheets[0].Cells.LastRowIndex + 1, 0] = new Cell("");
             }
             workbook.Save(filePath);
         }
@@ -257,6 +320,31 @@ namespace Briefcase
             }
 
             return value;
+        }
+
+
+
+        private void GeneratePhotoIndex()
+        {
+
+        }
+
+
+        // from: http://www.codeproject.com/Articles/15460/C-Image-to-Byte-Array-and-Byte-Array-to-Image-Conv
+        public byte[] imageToByteArray(System.Drawing.Image imageIn)
+        {
+            MemoryStream ms = new MemoryStream();
+            imageIn.Save(ms, System.Drawing.Imaging.ImageFormat.Gif);
+            return ms.ToArray();
+        }
+
+        // from: http://stackoverflow.com/questions/6826390/how-to-convert-image-to-data-uri-for-html-with-c
+        public static string GetDataURL(string imgFile)
+        {
+            return "<img src=\"data:image/"
+                        + Path.GetExtension(imgFile).Replace(".", "")
+                        + ";base64,"
+                        + Convert.ToBase64String(File.ReadAllBytes(imgFile)) + "\" />";
         }
 
     }
